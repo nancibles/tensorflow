@@ -49,7 +49,8 @@ visibility = [
     "//tensorflow_models:__subpackages__",
     "//tensorflow_model_optimization:__subpackages__",
     "//third_party/py/cleverhans:__subpackages__",
-    "//third_party/py/launchpad:__subpackages__",
+    "//third_party/courier:__subpackages__",
+    "//third_party/py/courier:__subpackages__",
     "//third_party/py/reverb:__subpackages__",
     "//third_party/py/neural_structured_learning:__subpackages__",
     "//third_party/py/tensorflow_examples:__subpackages__",
@@ -249,9 +250,8 @@ py_strict_library(
         "//tensorflow:__pkg__",
     ],
     deps = [
-        ":tf_decorator",
         "//tensorflow/python/types",
-        "//tensorflow/python/util:tf_stack",
+        "//tensorflow/python/util:core",
     ],
 )
 
@@ -5266,7 +5266,10 @@ pywrap_tensorflow_macro(
          tf_additional_plugin_deps() +
          tf_additional_profiler_deps()) + if_xla_available([
         "//tensorflow/compiler/aot:tfcompile_lib",
-    ]) + if_static(extra_deps = ["//tensorflow/core/platform:tensor_float_32_utils"]),
+    ]) + if_static(extra_deps = [
+        "//tensorflow/core/platform:tensor_float_32_utils",
+        "//tensorflow/core/platform:enable_tf2_utils",
+    ]),
 )
 
 # ** Targets for Windows build (start) **
@@ -6746,6 +6749,8 @@ tf_python_pybind_extension(
     module_name = "_pywrap_parallel_device",
     visibility = ["//tensorflow/python/distribute/parallel_device:__pkg__"],
     deps = [
+        "//tensorflow/c:pywrap_required_hdrs",
+        "//tensorflow/c/eager:tfe_tensorhandle_internal_hdrs_only",
         "//tensorflow/core:framework_headers_lib",
         "//tensorflow/core:lib_headers_for_pybind",
         "//tensorflow/core:protos_all_cc",
@@ -6768,6 +6773,10 @@ py_library(
     name = "tf2",
     srcs = ["tf2.py"],
     srcs_version = "PY2AND3",
+    deps = [
+        "//tensorflow/python/platform:_pywrap_tf2",
+        "//tensorflow/python/util:tf_export",
+    ],
 )
 
 py_test(
@@ -6779,6 +6788,8 @@ py_test(
         ":client_testlib",
         ":framework_combinations",
         ":tf2",
+        "//tensorflow/python/compat:v2_compat",
+        "//tensorflow/python/data/kernel_tests:test_base",
     ],
 )
 
