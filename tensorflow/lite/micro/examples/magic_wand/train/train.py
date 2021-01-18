@@ -30,7 +30,7 @@ from data_load import DataLoader
 import numpy as np
 import tensorflow as tf
 
-logdir = "logs/scalars/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+logdir = os.path.join("logs\scalars", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
 
 
@@ -63,15 +63,15 @@ def build_cnn(seq_length):
       tf.keras.layers.MaxPool2D((3, 1), padding="same"),  # (batch, 14, 1, 16)
       tf.keras.layers.Dropout(0.1),  # (batch, 14, 1, 16)
       tf.keras.layers.Flatten(),  # (batch, 224)
-      tf.keras.layers.Dense(16, activation="relu"),  # (batch, 16)
+      tf.keras.layers.Dense(16, activation="relu"),  # (batch, 16) ---> 64
       tf.keras.layers.Dropout(0.1),  # (batch, 16)
-      tf.keras.layers.Dense(4, activation="softmax")  # (batch, 4)
+      tf.keras.layers.Dense(4, activation="softmax")  # (batch, 4) ---> 37
   ])
   model_path = os.path.join("./netmodels", "CNN")
   print("Built CNN.")
   if not os.path.exists(model_path):
     os.makedirs(model_path)
-  model.load_weights("./netmodels/CNN/weights.h5")
+ # model.load_weights("./netmodels/CNN/weights.h5")
   return model, model_path
 
 
@@ -82,6 +82,7 @@ def build_lstm(seq_length):
           tf.keras.layers.LSTM(22),
           input_shape=(seq_length, 3)),  # output_shape=(batch, 44)
       tf.keras.layers.Dense(4, activation="sigmoid")  # (batch, 4)
+      #tf.keras.layers.Dense(37, activation="sigmoid")  # (batch, 4)
   ])
   model_path = os.path.join("./netmodels", "LSTM")
   print("Built LSTM.")
@@ -145,20 +146,26 @@ def train_net(
       steps_per_epoch=1000,
       validation_steps=int((valid_len - 1) / batch_size + 1),
       callbacks=[tensorboard_callback])
+
   loss, acc = model.evaluate(test_data)
   pred = np.argmax(model.predict(test_data), axis=1)
+
+  print("test_data length: %d" % test_len)
+  print("test_data labels: ", test_labels)
   confusion = tf.math.confusion_matrix(
       labels=tf.constant(test_labels),
       predictions=tf.constant(pred),
-      num_classes=4)
+      num_classes=4)#37) #num_classes=4)
   print(confusion)
+  np.savetxt('confusion_pdr.txt', confusion, fmt='%5s')
   print("Loss {}, Accuracy {}".format(loss, acc))
+
   # Convert the model to the TensorFlow Lite format without quantization
   converter = tf.lite.TFLiteConverter.from_keras_model(model)
   tflite_model = converter.convert()
 
   # Save the model to disk
-  open("model.tflite", "wb").write(tflite_model)
+  open("model_pdr.tflite", "wb").write(tflite_model)
 
   # Convert the model to the TensorFlow Lite format with quantization
   converter = tf.lite.TFLiteConverter.from_keras_model(model)
@@ -166,11 +173,11 @@ def train_net(
   tflite_model = converter.convert()
 
   # Save the model to disk
-  open("model_quantized.tflite", "wb").write(tflite_model)
+  open("model_pdr_quantized.tflite", "wb").write(tflite_model)
 
-  basic_model_size = os.path.getsize("model.tflite")
+  basic_model_size = os.path.getsize("model_pdr.tflite")
   print("Basic model is %d bytes" % basic_model_size)
-  quantized_model_size = os.path.getsize("model_quantized.tflite")
+  quantized_model_size = os.path.getsize("model_pdr_quantized.tflite")
   print("Quantized model is %d bytes" % quantized_model_size)
   difference = basic_model_size - quantized_model_size
   print("Difference is %d bytes" % difference)

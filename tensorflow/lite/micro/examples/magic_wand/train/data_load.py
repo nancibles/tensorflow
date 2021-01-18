@@ -39,7 +39,11 @@ class DataLoader(object):
                seq_length):
     self.dim = 3
     self.seq_length = seq_length
-    self.label2id = {"wing": 0, "ring": 1, "slope": 2, "negative": 3}
+    #self.label2id = {"wing": 0, "ring": 1, "slope": 2, "negative": 3}
+    self.label2id = {"p": 0, "d": 1, "r": 2, "negative": 3}#"g": 3, "o": 4, "c": 5, "x": 6, "k": 7, "j": 8, "i": 9, "h": 10, "f": 11, "e": 12, "b": 13, "a": 14, "negative": 15}
+    #self.label2id = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "h": 6, "g": 7, "i": 8, "j": 9, "k": 10, "l": 11, "m": 12, "n": 13,
+    #                "o": 14, "p": 15, "q": 16, "r": 17, "s": 18, "t": 19, "u": 20, "v": 21, "w": 22, "x": 23, "y": 24, "z": 25,
+    #                "0": 26, "1": 27, "2": 28, "3": 29, "4": 30, "5": 31, "6": 32, "7": 33, "8": 34, "9": 35, "negative": 36}
     self.train_data, self.train_label, self.train_len = self.get_data_file(
         train_data_path, "train")
     self.valid_data, self.valid_label, self.valid_len = self.get_data_file(
