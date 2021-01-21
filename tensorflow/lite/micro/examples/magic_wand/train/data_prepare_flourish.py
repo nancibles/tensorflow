@@ -18,6 +18,8 @@ folders = ["training-data"]
 #    "jiangyh", "xunkai"
 #]
 
+mag_factor = 1000
+
 
 def prepare_original_data(folder, idx, data, file_to_read):  # pylint: disable=redefined-outer-name
   """Read collected data from files."""
@@ -39,8 +41,8 @@ def prepare_original_data(folder, idx, data, file_to_read):  # pylint: disable=r
           #data_new["name"] = line[0][13]
         elif len(line) == 11 and len(line[0]) == 1:
           #print("line: %s and length: %d" % (line[0], len(line[0])))
-          data_new[DATA_NAME].append([float(i) for i in line[2:5]])
-          data_new[DATA_SUPP_NAME].append([float(i) for i in line[5:8]])
+          data_new[DATA_NAME].append([float(i)*mag_factor for i in line[5:8]])
+          data_new[DATA_SUPP_NAME].append([float(i) for i in line[2:5]])
       data.append(data_new)
 
   elif folder == "training-flourish":
@@ -54,7 +56,7 @@ def prepare_original_data(folder, idx, data, file_to_read):  # pylint: disable=r
           parse_data = line[4].split('\n')
           for x, entry in enumerate(parse_data):
             separated_line = entry.split(',')
-            data_new[DATA_NAME].append([float(i) for i in separated_line[1:4]])
+            data_new[DATA_NAME].append([float(i)*mag_factor for i in separated_line[1:4]])
           data.append(data_new)
 
   else:
@@ -80,10 +82,10 @@ def prepare_original_data(folder, idx, data, file_to_read):  # pylint: disable=r
 def generate_negative_data(data):  # pylint: disable=redefined-outer-name
   """Generate negative data labeled as 'negative6~8'."""
   # Big movement -> around straight line
-  for i in range(100):
-    if i > 80:
+  for i in range(50): #100
+    if i > 40: #80
       dic = {DATA_NAME: [], LABEL_NAME: "negative", "name": "negative8"}
-    elif i > 60:
+    elif i > 30: #60
       dic = {DATA_NAME: [], LABEL_NAME: "negative", "name": "negative7"}
     else:
       dic = {DATA_NAME: [], LABEL_NAME: "negative", "name": "negative6"}
@@ -93,7 +95,7 @@ def generate_negative_data(data):  # pylint: disable=redefined-outer-name
     x_increase = (random.random() - 0.5) * 10
     y_increase = (random.random() - 0.5) * 10
     z_increase = (random.random() - 0.5) * 10
-    for j in range(128):
+    for j in range(128): #60 #128
       dic[DATA_NAME].append([
           start_x + j * x_increase + (random.random() - 0.5) * 6,
           start_y + j * y_increase + (random.random() - 0.5) * 6,
@@ -101,30 +103,30 @@ def generate_negative_data(data):  # pylint: disable=redefined-outer-name
       ])
     data.append(dic)
   # Random
-  for i in range(100):
-    if i > 80:
+  for i in range(50): #100
+    if i > 40: #80
       dic = {DATA_NAME: [], LABEL_NAME: "negative", "name": "negative8"}
-    elif i > 60:
+    elif i > 30: #60
       dic = {DATA_NAME: [], LABEL_NAME: "negative", "name": "negative7"}
     else:
       dic = {DATA_NAME: [], LABEL_NAME: "negative", "name": "negative6"}
-    for j in range(128):
+    for j in range(128):  #60 #128
       dic[DATA_NAME].append([(random.random() - 0.5) * 1000,
                              (random.random() - 0.5) * 1000,
                              (random.random() - 0.5) * 1000])
     data.append(dic)
   # Stay still
-  for i in range(100):
-    if i > 80:
+  for i in range(50): #100
+    if i > 40: #80
       dic = {DATA_NAME: [], LABEL_NAME: "negative", "name": "negative8"}
-    elif i > 60:
+    elif i > 30: #60
       dic = {DATA_NAME: [], LABEL_NAME: "negative", "name": "negative7"}
     else:
       dic = {DATA_NAME: [], LABEL_NAME: "negative", "name": "negative6"}
     start_x = (random.random() - 0.5) * 2000
     start_y = (random.random() - 0.5) * 2000
     start_z = (random.random() - 0.5) * 2000
-    for j in range(128):
+    for j in range(128): #60 #128
       dic[DATA_NAME].append([
           start_x + (random.random() - 0.5) * 40,
           start_y + (random.random() - 0.5) * 40,
@@ -148,9 +150,9 @@ if __name__ == "__main__":
     directories = os.listdir("./%s/" % folder)
     for idx2, file in enumerate(directories):
       prepare_original_data(folder, idx2, data, "./%s/%s" % (folder,file))
-  for idx in range(5):
-    prepare_original_data("negative", idx, data,
-                          "./negative/output_negative_%d.txt" % (idx + 1))
+  #for idx in range(5):
+  #  prepare_original_data("negative", idx, data,
+  #                        "./negative/output_negative_%d.txt" % (idx + 1))
   generate_negative_data(data)
   print("data_length: " + str(len(data)))
   if not os.path.exists("./data"):

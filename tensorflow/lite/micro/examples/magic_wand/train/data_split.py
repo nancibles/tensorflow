@@ -54,9 +54,10 @@ def split_data(data, train_ratio, valid_ratio):  # pylint: disable=redefined-out
   valid_data = []  # pylint: disable=redefined-outer-name
   test_data = []  # pylint: disable=redefined-outer-name
   #num_dic = {"a": 0, "b": 0, "c": 0, "d": 0,"e": 0,"f": 0,"h": 0,"g": 0,"i": 0,"j": 0,"k": 0,"l": 0,"m": 0, "n": 0,"o": 0,"p": 0,"q": 0,"r": 0,"s": 0,"t": 0,"u": 0,"v": 0,"w": 0,"x": 0,"y": 0,"z": 0,
-  #           "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "negative": 0}
+  #          "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "negative": 0}
   #num_dic = {"wing": 0, "ring": 0, "slope": 0, "negative": 0}
-  num_dic = {"p": 0, "d": 0, "r": 0, "negative": 0} #"g": 0, "o": 0, "c": 0, "x": 0, "k": 0, "j": 0, "i": 0, "h": 0, "f": 0, "e": 0, "b": 0, "a": 0, "negative": 0}
+  num_dic = {"h": 0, "e": 0, "l": 0, "o":0, "w":0, "r":0, "d":0, "u":0, "s":0, "f":0, "g":0, "negative": 0} #"g": 0, "o": 0, "c": 0, "x": 0, "k": 0, "j": 0, "i": 0, "h": 0, "f": 0, "e": 0, "b": 0, "a": 0, "negative": 0}
+  #num_dic = {"a": 0, "b": 0, "c": 0, "negative": 0}
   for idx, item in enumerate(data):  # pylint: disable=unused-variable
     for i in num_dic:
       if item["gesture"] == i:

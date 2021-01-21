@@ -33,6 +33,10 @@ import tensorflow as tf
 logdir = os.path.join("logs\scalars", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
 
+file_save_name = "helowrdusfg_d100"
+num_output = 12 #number of output classes
+second_dense_layer = 100
+do_rate=0.1
 
 def reshape_function(data, label):
   reshaped_data = tf.reshape(data, [-1, 3, 1])
@@ -57,15 +61,15 @@ def build_cnn(seq_length):
           activation="relu",
           input_shape=(seq_length, 3, 1)),  # output_shape=(batch, 128, 3, 8)
       tf.keras.layers.MaxPool2D((3, 3)),  # (batch, 42, 1, 8)
-      tf.keras.layers.Dropout(0.1),  # (batch, 42, 1, 8)
+      tf.keras.layers.Dropout(do_rate),  # (batch, 42, 1, 8)
       tf.keras.layers.Conv2D(16, (4, 1), padding="same",
                              activation="relu"),  # (batch, 42, 1, 16)
       tf.keras.layers.MaxPool2D((3, 1), padding="same"),  # (batch, 14, 1, 16)
-      tf.keras.layers.Dropout(0.1),  # (batch, 14, 1, 16)
+      tf.keras.layers.Dropout(do_rate),  # (batch, 14, 1, 16)
       tf.keras.layers.Flatten(),  # (batch, 224)
-      tf.keras.layers.Dense(16, activation="relu"),  # (batch, 16) ---> 64
-      tf.keras.layers.Dropout(0.1),  # (batch, 16)
-      tf.keras.layers.Dense(4, activation="softmax")  # (batch, 4) ---> 37
+      tf.keras.layers.Dense(second_dense_layer, activation="relu"),  # (batch, 16) ---> 64
+      tf.keras.layers.Dropout(do_rate),  # (batch, 16)
+      tf.keras.layers.Dense(num_output, activation="softmax")  # (batch, 4) ---> 37
   ])
   model_path = os.path.join("./netmodels", "CNN")
   print("Built CNN.")
@@ -78,10 +82,10 @@ def build_cnn(seq_length):
 def build_lstm(seq_length):
   """Builds an LSTM in Keras."""
   model = tf.keras.Sequential([
-      tf.keras.layers.Bidirectional(
-          tf.keras.layers.LSTM(22),
-          input_shape=(seq_length, 3)),  # output_shape=(batch, 44)
-      tf.keras.layers.Dense(4, activation="sigmoid")  # (batch, 4)
+          tf.keras.layers.Bidirectional(
+          tf.keras.layers.LSTM(30),
+            input_shape=(seq_length, 3)),  # output_shape=(batch, 44)
+          tf.keras.layers.Dense(num_output, activation="sigmoid")  # (batch, 4)
       #tf.keras.layers.Dense(37, activation="sigmoid")  # (batch, 4)
   ])
   model_path = os.path.join("./netmodels", "LSTM")
@@ -121,10 +125,11 @@ def train_net(
     kind):
   """Trains the model."""
   calculate_model_size(model)
-  epochs = 50
+  epochs = 50 #50
   batch_size = 64
+  opt = tf.keras.optimizers.Adam(learning_rate=0.0001)
   model.compile(
-      optimizer="adam",
+      optimizer=opt,#"adam",
       loss="sparse_categorical_crossentropy",
       metrics=["accuracy"])
   if kind == "CNN":
@@ -143,7 +148,7 @@ def train_net(
       train_data,
       epochs=epochs,
       validation_data=valid_data,
-      steps_per_epoch=1000,
+      steps_per_epoch=1000, #1000
       validation_steps=int((valid_len - 1) / batch_size + 1),
       callbacks=[tensorboard_callback])
 
@@ -155,9 +160,9 @@ def train_net(
   confusion = tf.math.confusion_matrix(
       labels=tf.constant(test_labels),
       predictions=tf.constant(pred),
-      num_classes=4)#37) #num_classes=4)
+      num_classes=num_output)#37) #num_classes=4)
   print(confusion)
-  np.savetxt('confusion_pdr.txt', confusion, fmt='%5s')
+  np.savetxt('confusion_%s.txt'%file_save_name, confusion, fmt='%5s')
   print("Loss {}, Accuracy {}".format(loss, acc))
 
   # Convert the model to the TensorFlow Lite format without quantization
@@ -165,7 +170,7 @@ def train_net(
   tflite_model = converter.convert()
 
   # Save the model to disk
-  open("model_pdr.tflite", "wb").write(tflite_model)
+  open("model_%s.tflite"%file_save_name, "wb").write(tflite_model)
 
   # Convert the model to the TensorFlow Lite format with quantization
   converter = tf.lite.TFLiteConverter.from_keras_model(model)
@@ -173,11 +178,11 @@ def train_net(
   tflite_model = converter.convert()
 
   # Save the model to disk
-  open("model_pdr_quantized.tflite", "wb").write(tflite_model)
+  open("model_%s_quantized.tflite"%file_save_name, "wb").write(tflite_model)
 
-  basic_model_size = os.path.getsize("model_pdr.tflite")
+  basic_model_size = os.path.getsize("model_%s.tflite"%file_save_name)
   print("Basic model is %d bytes" % basic_model_size)
-  quantized_model_size = os.path.getsize("model_pdr_quantized.tflite")
+  quantized_model_size = os.path.getsize("model_%s_quantized.tflite"%file_save_name)
   print("Quantized model is %d bytes" % quantized_model_size)
   difference = basic_model_size - quantized_model_size
   print("Difference is %d bytes" % difference)
