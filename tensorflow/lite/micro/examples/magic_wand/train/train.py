@@ -29,13 +29,14 @@ from data_load import DataLoader
 
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 logdir = os.path.join("logs\scalars", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
 
-file_save_name = "helowrdusfg_d100"
-num_output = 12 #number of output classes
-second_dense_layer = 100
+file_save_name = "helowrd_d64_150neg50sets"
+num_output = 8 #number of output classes
+second_dense_layer = 64
 do_rate=0.1
 
 def reshape_function(data, label):
@@ -127,9 +128,9 @@ def train_net(
   calculate_model_size(model)
   epochs = 50 #50
   batch_size = 64
-  opt = tf.keras.optimizers.Adam(learning_rate=0.0001)
+  #opt = tf.keras.optimizers.Adam(learning_rate=0.0001)
   model.compile(
-      optimizer=opt,#"adam",
+      optimizer="adam",
       loss="sparse_categorical_crossentropy",
       metrics=["accuracy"])
   if kind == "CNN":
@@ -144,7 +145,7 @@ def train_net(
   train_data = train_data.batch(batch_size).repeat()
   valid_data = valid_data.batch(batch_size)
   test_data = test_data.batch(batch_size)
-  model.fit(
+  history = model.fit(
       train_data,
       epochs=epochs,
       validation_data=valid_data,
@@ -162,6 +163,20 @@ def train_net(
       predictions=tf.constant(pred),
       num_classes=num_output)#37) #num_classes=4)
   print(confusion)
+
+  print(history.history)
+  loss_train = history.history['accuracy']
+  loss_val = history.history['val_accuracy']
+  epochs = range(0, 50)
+  plt.plot(epochs, loss_train, 'g', label='Training acc')
+  plt.plot(epochs, loss_val, 'b', label='validation acc')
+  plt.title('Training and Validation acc')
+  plt.xlabel('Epochs')
+  plt.ylabel('Loss')
+  plt.legend()
+  plt.show()
+  print("plotted")
+
   np.savetxt('confusion_%s.txt'%file_save_name, confusion, fmt='%5s')
   print("Loss {}, Accuracy {}".format(loss, acc))
 

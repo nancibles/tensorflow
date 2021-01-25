@@ -6,17 +6,14 @@ import csv
 import json
 import os
 import random
+import requests
+import argparse
+import json
 
 KELVIN = True
 LABEL_NAME = "gesture"
 DATA_NAME = "accel_ms2_xyz"
 DATA_SUPP_NAME = "gyro_ms2_xyz"
-#folders = ["wing", "ring", "slope"]
-folders = ["training-data"]
-#names = [
-#    "hyw", "shiyun", "tangsy", "dengyl", "zhangxy", "pengxl", "liucx",
-#    "jiangyh", "xunkai"
-#]
 
 mag_factor = 1000
 
@@ -37,12 +34,10 @@ def prepare_original_data(folder, idx, data, file_to_read):  # pylint: disable=r
           data_new = {}
           data_new[LABEL_NAME] = line[0][13]
           data_new[DATA_NAME] = []
-          data_new[DATA_SUPP_NAME] = []
-          #data_new["name"] = line[0][13]
+          #data_new[DATA_SUPP_NAME] = []
         elif len(line) == 11 and len(line[0]) == 1:
-          #print("line: %s and length: %d" % (line[0], len(line[0])))
           data_new[DATA_NAME].append([float(i)*mag_factor for i in line[5:8]])
-          data_new[DATA_SUPP_NAME].append([float(i) for i in line[2:5]])
+          #data_new[DATA_SUPP_NAME].append([float(i) for i in line[2:5]])
       data.append(data_new)
 
   elif folder == "training-flourish":
@@ -58,6 +53,22 @@ def prepare_original_data(folder, idx, data, file_to_read):  # pylint: disable=r
             separated_line = entry.split(',')
             data_new[DATA_NAME].append([float(i)*mag_factor for i in separated_line[1:4]])
           data.append(data_new)
+
+  elif folder == args.username:
+      with open(file_to_read) as json_data:
+          loaded_json = json.load(json_data)
+          for p in loaded_json:
+              data_new = {}
+              data_new[LABEL_NAME] = p['gesture'].lower()
+              data_new[DATA_NAME] = []
+              gesture_splits = p['data'].split(']')
+              for acc_split in gesture_splits:
+                rough_tri = acc_split.split('[')[-1:]
+                if len(rough_tri[0]) > 1:
+                  acc_data = (rough_tri[0].split(','))
+                  data_new[DATA_NAME].append([float(i)*mag_factor for i in acc_data])
+              #print(data_new)
+              data.append(data_new)
 
   else:
     with open(file_to_read, "r") as f:
@@ -145,7 +156,24 @@ def write_data(data_to_write, path):
 
 
 if __name__ == "__main__":
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--website", "-w")
+  parser.add_argument("--username", "-u")
+  args = parser.parse_args()
+
+
   data = []  # pylint: disable=redefined-outer-name
+  if args.website:
+    username = args.username
+    url = 'https://flourish.azurewebsites.net/admin/getTrainingData/%s'%username
+    r = requests.get(url, allow_redirects=True)
+    os.makedirs(username, exist_ok=True)
+    open('%s/%s.txt'% (username, username), 'wb').write(r.content)
+    folders = ["%s"%username]#, "training-data"]
+
+  elif not args.website:
+    folders = ["training-data"]
+
   for idx1, folder in enumerate(folders):
     directories = os.listdir("./%s/" % folder)
     for idx2, file in enumerate(directories):
