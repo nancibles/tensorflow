@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 logdir = os.path.join("logs\scalars", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
 
-file_save_name = "helowrd_d64_150neg50sets"
+#file_save_name = "helowrd_d64_150neg50sets"
 num_output = 8 #number of output classes
 second_dense_layer = 64
 do_rate=0.1
@@ -123,7 +123,8 @@ def train_net(
     valid_data,  # pylint: disable=unused-argument
     test_len,
     test_data,
-    kind):
+    kind,
+    file_save_name):
   """Trains the model."""
   calculate_model_size(model)
   epochs = 50 #50
@@ -164,18 +165,18 @@ def train_net(
       num_classes=num_output)#37) #num_classes=4)
   print(confusion)
 
-  print(history.history)
-  loss_train = history.history['accuracy']
-  loss_val = history.history['val_accuracy']
-  epochs = range(0, 50)
-  plt.plot(epochs, loss_train, 'g', label='Training acc')
-  plt.plot(epochs, loss_val, 'b', label='validation acc')
-  plt.title('Training and Validation acc')
-  plt.xlabel('Epochs')
-  plt.ylabel('Loss')
-  plt.legend()
-  plt.show()
-  print("plotted")
+  # print(history.history)
+  # loss_train = history.history['accuracy']
+  # loss_val = history.history['val_accuracy']
+  # epochs = range(0, 50)
+  # plt.plot(epochs, loss_train, 'g', label='Training acc')
+  # plt.plot(epochs, loss_val, 'b', label='validation acc')
+  # plt.title('Training and Validation acc')
+  # plt.xlabel('Epochs')
+  # plt.ylabel('Loss')
+  # plt.legend()
+  # plt.show()
+  # print("plotted")
 
   np.savetxt('confusion_%s.txt'%file_save_name, confusion, fmt='%5s')
   print("Loss {}, Accuracy {}".format(loss, acc))
@@ -207,6 +208,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--model", "-m")
   parser.add_argument("--person", "-p")
+  parser.add_argument("--outfile", "-o")
   args = parser.parse_args()
 
   seq_length = 128
@@ -225,6 +227,6 @@ if __name__ == "__main__":
 
   print("Start training...")
   train_net(model, model_path, train_len, train_data, valid_len, valid_data,
-            test_len, test_data, args.model)
+            test_len, test_data, args.model, args.outfile)
 
   print("Training finished!")
