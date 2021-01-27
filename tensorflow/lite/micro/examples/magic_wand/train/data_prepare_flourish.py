@@ -165,7 +165,7 @@ if __name__ == "__main__":
   data = []  # pylint: disable=redefined-outer-name
   if args.website:
     username = args.username
-    url = 'https://flourish.azurewebsites.net/admin/getTrainingData/%s'%username
+    url = 'https://flourish.azurewebsites.net/api/getTrainingData/%s'%username
     r = requests.get(url, allow_redirects=True)
     os.makedirs(username, exist_ok=True)
     open('%s/%s.txt'% (username, username), 'wb').write(r.content)
