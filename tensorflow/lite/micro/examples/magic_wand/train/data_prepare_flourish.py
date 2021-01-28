@@ -15,8 +15,7 @@ LABEL_NAME = "gesture"
 DATA_NAME = "accel_ms2_xyz"
 DATA_SUPP_NAME = "gyro_ms2_xyz"
 
-mag_factor = 1000
-
+mag_factor = 1
 
 def prepare_original_data(folder, idx, data, file_to_read):  # pylint: disable=redefined-outer-name
   """Read collected data from files."""
@@ -169,7 +168,15 @@ if __name__ == "__main__":
     r = requests.get(url, allow_redirects=True)
     os.makedirs(username, exist_ok=True)
     open('%s/%s.txt'% (username, username), 'wb').write(r.content)
-    folders = ["%s"%username]#, "training-data"]
+    with open('%s/%s.txt'% (username, username)) as input_file:
+        first = input_file.read(2)
+        if first == "[]":
+            print('This user file is empty! Will now default to training SampleTestData.')
+            url = 'https://flourish.azurewebsites.net/api/getTrainingData/SampleTestData'
+            r = requests.get(url, allow_redirects=True)
+            os.makedirs(username, exist_ok=True)
+            open('%s/%s.txt' % (username, username), 'wb').write(r.content)
+    folders = ["%s"%username]
 
   elif not args.website:
     folders = ["training-data"]

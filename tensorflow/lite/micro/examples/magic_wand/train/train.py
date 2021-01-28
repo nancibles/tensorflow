@@ -35,7 +35,7 @@ logdir = os.path.join("logs\scalars", datetime.datetime.now().strftime("%Y%m%d-%
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
 
 #file_save_name = "helowrd_d64_150neg50sets"
-num_output = 8 #number of output classes
+num_output = 10 #number of output classes
 second_dense_layer = 64
 do_rate=0.1
 
