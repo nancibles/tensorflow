@@ -26,13 +26,19 @@ import argparse
 import datetime
 import os
 from data_load import DataLoader
+from LRF.lr_finder import LRFinder
+from CLR.clr_callback import CyclicLR
 
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
-logdir = "logs/scalars/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+logdir = os.path.join("logs\scalars", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
 
+# in order to easily change architecture for number of outputs
+num_output = 10 #number of output classes
+second_dense_layer = 64
 
 def reshape_function(data, label):
   reshaped_data = tf.reshape(data, [-1, 3, 1])
@@ -63,25 +69,25 @@ def build_cnn(seq_length):
       tf.keras.layers.MaxPool2D((3, 1), padding="same"),  # (batch, 14, 1, 16)
       tf.keras.layers.Dropout(0.1),  # (batch, 14, 1, 16)
       tf.keras.layers.Flatten(),  # (batch, 224)
-      tf.keras.layers.Dense(16, activation="relu"),  # (batch, 16)
+      tf.keras.layers.Dense(second_dense_layer, activation="relu"),  # (batch, 16) ---> 64
       tf.keras.layers.Dropout(0.1),  # (batch, 16)
-      tf.keras.layers.Dense(4, activation="softmax")  # (batch, 4)
+      tf.keras.layers.Dense(num_output, activation="softmax")  # (batch, 4) ---> 37
   ])
   model_path = os.path.join("./netmodels", "CNN")
   print("Built CNN.")
   if not os.path.exists(model_path):
     os.makedirs(model_path)
-  model.load_weights("./netmodels/CNN/weights.h5")
+ # model.load_weights("./netmodels/CNN/weights.h5")
   return model, model_path
 
 
 def build_lstm(seq_length):
   """Builds an LSTM in Keras."""
   model = tf.keras.Sequential([
-      tf.keras.layers.Bidirectional(
-          tf.keras.layers.LSTM(22),
-          input_shape=(seq_length, 3)),  # output_shape=(batch, 44)
-      tf.keras.layers.Dense(4, activation="sigmoid")  # (batch, 4)
+          tf.keras.layers.Bidirectional(
+          tf.keras.layers.LSTM(30),
+            input_shape=(seq_length, 3)),  # output_shape=(batch, 44)
+          tf.keras.layers.Dense(num_output, activation="sigmoid")  # (batch, 4)
   ])
   model_path = os.path.join("./netmodels", "LSTM")
   print("Built LSTM.")
@@ -107,6 +113,12 @@ def build_net(args, seq_length):
     print("Please input correct model name.(CNN  LSTM)")
   return model, model_path
 
+def scheduler(epoch, lr):
+  if epoch < 10:
+    return lr
+  else:
+    print(lr)
+    return lr * tf.math.exp(-0.1)
 
 def train_net(
     model,
@@ -117,11 +129,29 @@ def train_net(
     valid_data,  # pylint: disable=unused-argument
     test_len,
     test_data,
-    kind):
+    kind,
+    file_save_name):
+
   """Trains the model."""
   calculate_model_size(model)
-  epochs = 50
+  epochs = 75
   batch_size = 64
+
+  # Cyclic Learning Rate
+  clr_step_size = int(3.5 * (train_len) / batch_size)
+  print(clr_step_size)
+  base_lr = 1e-4
+  max_lr = 1e-2
+  mode = 'triangular2'
+
+  # Learning Rate Finder (to find best learning rate)
+  start_lr = 1e-3
+  end_lr = 1e-1
+
+  #callback = tf.keras.callbacks.LearningRateScheduler(scheduler)
+  clr_callback = CyclicLR(base_lr=base_lr, max_lr=max_lr, step_size=clr_step_size, mode=mode)
+  lrf_callback = LRFinder(min_lr=start_lr, max_lr=end_lr)
+
   model.compile(
       optimizer="adam",
       loss="sparse_categorical_crossentropy",
@@ -138,27 +168,50 @@ def train_net(
   train_data = train_data.batch(batch_size).repeat()
   valid_data = valid_data.batch(batch_size)
   test_data = test_data.batch(batch_size)
-  model.fit(
+  history = model.fit(
       train_data,
       epochs=epochs,
       validation_data=valid_data,
-      steps_per_epoch=1000,
+      steps_per_epoch=1000, #1000
       validation_steps=int((valid_len - 1) / batch_size + 1),
-      callbacks=[tensorboard_callback])
+      callbacks=[clr_callback, tensorboard_callback])
+
   loss, acc = model.evaluate(test_data)
   pred = np.argmax(model.predict(test_data), axis=1)
+
   confusion = tf.math.confusion_matrix(
       labels=tf.constant(test_labels),
       predictions=tf.constant(pred),
-      num_classes=4)
+      num_classes=num_output)#37) #num_classes=4)
   print(confusion)
+
+  # Plot the training and validation curves
+  acc_train = history.history['accuracy']
+  acc_val = history.history['val_accuracy']
+  loss_train = history.history['loss']
+  loss_val = history.history['val_loss']
+  epochs = range(0, 75)
+  plt.plot(epochs, acc_train, 'g', label='Training Accuracy')
+  plt.plot(epochs, acc_val, 'b', label='Validation Accuracy')
+  plt.plot(epochs, loss_train, 'g--', label='Training Loss')
+  plt.plot(epochs, loss_val, 'b--', label='Validation Loss')
+  plt.title('Training and Validation Loss and Accuracy')
+  plt.xlabel('Epochs')
+  plt.ylabel('Accuracy')
+  plt.ylim(0, 1.2)
+  plt.legend()
+  plt.show()
+  print("plotted")
+
+  np.savetxt('confusion_%s.txt'%file_save_name, confusion, fmt='%5s')
   print("Loss {}, Accuracy {}".format(loss, acc))
+
   # Convert the model to the TensorFlow Lite format without quantization
   converter = tf.lite.TFLiteConverter.from_keras_model(model)
   tflite_model = converter.convert()
 
   # Save the model to disk
-  open("model.tflite", "wb").write(tflite_model)
+  open("model_%s.tflite"%file_save_name, "wb").write(tflite_model)
 
   # Convert the model to the TensorFlow Lite format with quantization
   converter = tf.lite.TFLiteConverter.from_keras_model(model)
@@ -166,11 +219,11 @@ def train_net(
   tflite_model = converter.convert()
 
   # Save the model to disk
-  open("model_quantized.tflite", "wb").write(tflite_model)
+  open("model_%s_quantized.tflite"%file_save_name, "wb").write(tflite_model)
 
-  basic_model_size = os.path.getsize("model.tflite")
+  basic_model_size = os.path.getsize("model_%s.tflite"%file_save_name)
   print("Basic model is %d bytes" % basic_model_size)
-  quantized_model_size = os.path.getsize("model_quantized.tflite")
+  quantized_model_size = os.path.getsize("model_%s_quantized.tflite"%file_save_name)
   print("Quantized model is %d bytes" % quantized_model_size)
   difference = basic_model_size - quantized_model_size
   print("Difference is %d bytes" % difference)
@@ -179,18 +232,19 @@ def train_net(
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--model", "-m")
-  parser.add_argument("--person", "-p")
+  # parser.add_argument("--person", "-p")
+  parser.add_argument("--outfile", "-o")
   args = parser.parse_args()
 
   seq_length = 128
 
   print("Start to load data...")
-  if args.person == "true":
-    train_len, train_data, valid_len, valid_data, test_len, test_data = \
-        load_data("./person_split/train", "./person_split/valid",
-                  "./person_split/test", seq_length)
-  else:
-    train_len, train_data, valid_len, valid_data, test_len, test_data = \
+  # if args.person == "true":
+  #   train_len, train_data, valid_len, valid_data, test_len, test_data = \
+  #       load_data("./person_split/train", "./person_split/valid",
+  #                 "./person_split/test", seq_length)
+  # else:
+  train_len, train_data, valid_len, valid_data, test_len, test_data = \
         load_data("./data/train", "./data/valid", "./data/test", seq_length)
 
   print("Start to build net...")
@@ -198,6 +252,6 @@ if __name__ == "__main__":
 
   print("Start training...")
   train_net(model, model_path, train_len, train_data, valid_len, valid_data,
-            test_len, test_data, args.model)
+            test_len, test_data, args.model, args.outfile)
 
   print("Training finished!")

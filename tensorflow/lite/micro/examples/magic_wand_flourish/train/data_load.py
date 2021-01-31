@@ -39,7 +39,7 @@ class DataLoader(object):
                seq_length):
     self.dim = 3
     self.seq_length = seq_length
-    self.label2id = {"wing": 0, "ring": 1, "slope": 2, "negative": 3}
+    self.label2id = {"h": 0, "e": 1, "l": 2, "o":3, "w": 4, "r": 5, "d": 6, "u": 7, "s": 8, "negative": 9}
     self.train_data, self.train_label, self.train_len = self.get_data_file(
         train_data_path, "train")
     self.valid_data, self.valid_label, self.valid_len = self.get_data_file(
@@ -63,7 +63,7 @@ class DataLoader(object):
     print(data_type + "_data_length:" + str(length))
     return data, label, length
 
-  def pad(self, data, seq_length, dim):
+  def pad(self, data, seq_length, dim): #variable sequence length must be padded; we assumed all should be 128
     """Get neighbour padding."""
     noise_level = 20
     padded_data = []

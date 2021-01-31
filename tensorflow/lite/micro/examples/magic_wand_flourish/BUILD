@@ -42,6 +42,7 @@ tflite_micro_cc_test(
     deps = [
         ":magic_wand_model_data",
         ":sample_feature_data",
+        "//tensorflow/lite:schema_fbs_version",
         "//tensorflow/lite/micro:micro_error_reporter",
         "//tensorflow/lite/micro:micro_framework",
         "//tensorflow/lite/micro:op_resolvers",
@@ -157,6 +158,7 @@ cc_binary(
         ":gesture_predictor",
         ":magic_wand_model_data",
         ":output_handler",
+        "//tensorflow/lite:schema_fbs_version",
         "//tensorflow/lite/micro:micro_error_reporter",
         "//tensorflow/lite/micro:micro_framework",
         "//tensorflow/lite/micro:op_resolvers",
