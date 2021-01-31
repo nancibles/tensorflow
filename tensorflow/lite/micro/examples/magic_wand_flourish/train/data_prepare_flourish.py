@@ -160,7 +160,8 @@ if __name__ == "__main__":
   args = parser.parse_args()
 
   data = []
-  if args.website:
+
+  if args.website == "True":
     username = args.username
     url = 'https://flourish.azurewebsites.net/api/getTrainingData/%s'%username
     r = requests.get(url, allow_redirects=True)
@@ -178,10 +179,9 @@ if __name__ == "__main__":
             r = requests.get(url, allow_redirects=True)
             os.makedirs(username, exist_ok=True)
             open('%s/%s.txt' % (username, username), 'wb').write(r.content)
-
     folders = ["%s"%username]
 
-  elif not args.website:
+  elif args.website == "False":
     # for experimental purposes when we were using csv files of data...
     folders = ["training-data"]
 
