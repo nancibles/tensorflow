@@ -118,7 +118,7 @@ def scheduler(epoch, lr):
     return lr
   else:
     print(lr)
-    return lr * tf.math.exp(-0.1)
+    return lr * tf.math.exp(-0.01)
 
 def train_net(
     model,
@@ -138,7 +138,7 @@ def train_net(
   batch_size = 64
 
   # Cyclic Learning Rate
-  clr_step_size = int(3.5 * (train_len) / batch_size)
+  clr_step_size = int(4 * (train_len) / batch_size)
   print(clr_step_size)
   base_lr = 1e-4
   max_lr = 1e-2
@@ -148,7 +148,7 @@ def train_net(
   start_lr = 1e-3
   end_lr = 1e-1
 
-  #callback = tf.keras.callbacks.LearningRateScheduler(scheduler)
+  callback = tf.keras.callbacks.LearningRateScheduler(scheduler)
   clr_callback = CyclicLR(base_lr=base_lr, max_lr=max_lr, step_size=clr_step_size, mode=mode)
   lrf_callback = LRFinder(min_lr=start_lr, max_lr=end_lr)
 
